@@ -3,6 +3,7 @@ from tkinter import *
 from tkinter import messagebox
 from random import *
 import pyperclip
+import json
 # ---------------------------- PASSWORD GENERATOR ------------------------------- #
 def generate_password():
     letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
@@ -21,16 +22,53 @@ def generate_password():
     pyperclip.copy(password)
 
 # ---------------------------- SAVE PASSWORD ------------------------------- #
-def fill():
-    if len(web_text.get())==0 or len(pass_text.get())==0:
-        messagebox.showinfo(title="oops", message="Please fill all the fields")
+def find_password():
+    website = web_text.get()
+    try:
+        with open("data.json") as data_file:
+            data = json.load(data_file)
+    except FileNotFoundError:
+        messagebox.showinfo(title="Error", message="No Data File Found.")
     else:
-        f = open("local.txt", "a")
-        f.write(f"{web_text.get()} | {email_text.get()} | {pass_text.get()}\n")
-        web_text.delete(0,END)
-        pass_text.delete(0, END)
-        messagebox.showinfo(title="Title",message="Message")
-        f.close()
+        if website in data:
+            email = data[website]["email"]
+            password = data[website]["password"]
+            messagebox.showinfo(title=website, message=f"Email: {email}\nPassword: {password}")
+        else:
+            messagebox.showinfo(title="Error", message=f"No details for {website} exists.")
+
+def save():
+
+    website = web_text.get()
+    email = email_text.get()
+    password = pass_text.get()
+    new_data = {
+        website: {
+            "email": email,
+            "password": password,
+        }
+    }
+
+    if len(website) == 0 or len(password) == 0:
+        messagebox.showinfo(title="Oops", message="Please make sure you haven't left any fields empty.")
+    else:
+        try:
+            with open("data.json", "r") as data_file:
+                #Reading old data
+                data = json.load(data_file)
+        except FileNotFoundError:
+            with open("data.json", "w") as data_file:
+                json.dump(new_data, data_file, indent=4)
+        else:
+            #Updating old data with new data
+            data.update(new_data)
+
+            with open("data.json", "w") as data_file:
+                #Saving updated data
+                json.dump(data, data_file, indent=4)
+        finally:
+            web_text.delete(0, END)
+            pass_text.delete(0, END)
 # ---------------------------- UI SETUP ------------------------------- #
 
 window = Tk()
@@ -63,7 +101,10 @@ pass_text.grid(row=3,column=1,columnspan=2)
 get = Button(text="Generate Password", command= generate_password)
 get.grid(row=3,column=3)
 
-add = Button(text = "Add",width = 36, command = fill)
+get = Button(text="Search", command= find_password)
+get.grid(row=1,column=3)
+
+add = Button(text = "Add",width = 36, command = save)
 add.grid(row=4,column=1, columnspan=2)
 
 window.config(padx= 50,pady=50)
